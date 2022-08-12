@@ -1,0 +1,109 @@
+---
+- name: "Create user {{ username }}"
+  ansible.builtin.user:
+    name: "{{ username }}"
+
+- name: "Create systemd service file"
+  ansible.builtin.template:
+    src: templates/service.j2
+    dest: "/etc/systemd/system/{{ chain_daemon_name }}.service"
+    mode: "644"
+
+- name: "Get {{ chain_bin }} binary version" # noqa no-changed-when
+  ansible.builtin.shell:
+    cmd: "{{ bin_dir }}/{{ chain_bin }} version 2>&1"
+  failed_when: false
+  register: chain_version_result
+
+- name: "Download chain binary"
+  when:
+    - chain_version is defined
+    - chain_version_result.stdout is not search(chain_version | replace('v', ''))
+    - chain_bin_url is defined
+    - chain_git_repo is not defined
+  block:
+    - name: "Stop service (if running)"
+      ansible.builtin.systemd:
+        name: "{{ chain_daemon_name }}"
+        state: stopped
+
+    - name: "Remove previous file"
+      ansible.builtin.file:
+        dest: "{{ bin_dir }}/{{ chain_bin }}"
+        state: absent
+
+    - name: "Unarchive chain binary"
+      ansible.builtin.unarchive:
+        src: "{{ chain_bin_url }}"
+        dest: "{{ bin_dir }}"
+        mode: "755"
+        remote_src: true
+      when: chain_bin_url is regex('\.tar\.gz$') # .tar.gz
+      notify: restart_service
+
+    - name: "Download {{ chain_name }} binary"
+      ansible.builtin.get_url:
+        url: "{{ chain_bin_url }}"
+        dest: "{{ bin_dir }}"
+        mode: "755"
+      register: get_url_result
+      when: chain_bin_url is regex('[_-][^.]+$') # no extension, e.g. osmosisd-6.1.0-linux-amd64
+      notify: restart_service
+
+    - name: "Link download chain binary"
+      ansible.builtin.file:
+        src: "{{ get_url_result.dest }}"
+        dest: "{{ bin_dir }}/{{ chain_bin }}"
+        state: link
+      when: chain_bin_url is regex('[_-][^.]+$') # no extension, e.g. osmosisd-6.1.0-linux-amd64
+      notify: restart_service
+
+- name: "Make chain binary"
+  when:
+    - chain_version is defined
+    - chain_version_result.stdout is not search(chain_version | replace('v', ''))
+    - chain_git_repo is defined
+  block:
+    - name: "Stop service (if running)"
+      ansible.builtin.systemd:
+        name: "{{ chain_daemon_name }}"
+        state: stopped
+
+    - name: "Remove previous file"
+      ansible.builtin.file:
+        dest: "{{ bin_dir }}/{{ chain_bin }}"
+        state: absent
+
+    - name: "Install apt packages"
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 86400
+        pkg:
+          - build-essential
+          - curl
+          - git
+          - jq
+          - snapd
+          - ufw
+
+    - name: "Git checkout chain repo"
+      ansible.builtin.git:
+        repo: "{{ chain_git_repo }}"
+        dest: "/tmp/{{ chain_name }}"
+        version: "{{ chain_version }}"
+
+    - name: "Make {{ chain_name }} binary" # noqa no-changed-when
+      ansible.builtin.shell: "{{ make_command | default('make install') }}"
+      args:
+        chdir: "/tmp/{{ chain_name }}"
+      environment:
+        PATH: "{{ golang_bin_dir }}:{{ ansible_env.PATH }}"
+        GOBIN: "{{ bin_dir }}"
+      notify: restart_service
+
+- name: "Ensure permissions of data dir"
+  ansible.builtin.file:
+    dest: "{{ data_dir }}"
+    state: directory
+    owner: "{{ username }}"
+    mode: "774"

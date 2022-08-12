@@ -1,0 +1,7 @@
+---
+chain_minimum_gas_prices: "0.0025unoria"
+chain_id: "oasis-2"
+persistent_peers: "5dc187550a021298f88c3e5905c7dbdd790ff040@167.99.177.244:26656"
+statesync_enabled: true
+rpc_servers: "https://chaos-rpc.cryptodollar.dev:443,http://167.99.177.244:26657"
+ 

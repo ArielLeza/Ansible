@@ -1,0 +1,98 @@
+---
+# <username> is the non-root user under which daemon will operate
+username: cosmos
+
+# <home_dir> is a user home dir
+home_dir: "/home/{{ username }}"
+
+# <bin_dir> is a binaries location dir, should be in the PATH.
+bin_dir: /usr/local/bin
+
+# <chain_registry_url> is the URL to get Cosmos-SDK based chain metadata.
+# This value will almost never change.
+# chain_registry_url: https://raw.githubusercontent.com/cosmos/chain-registry/master/{{ chain_name }}/chain.json
+
+# <chain_distro> is the 'system/architecture' string to download chain binary.
+# chain_distro: e.g. linux/amd64
+
+# <chain_name> defines the a Cosmos-SDK based chain to init
+# Requred to be set in role vars.
+chain_name: "noria"
+
+# <extra_run_args> is an optinal extra bin flags
+# e.g. extra_run_args: "--log_format json"
+
+# <chain_bin_url> is an optional url to download specific version of chain binary.
+# Since chain registry might have outdated data or when secure patch has been released.
+# e.g. chain_bin_url: https://github.com/osmosis-labs/osmosis/releases/download/v6.1.0/osmosisd-6.1.0-linux-amd64
+
+# <data_dir> is the parametr which allows to override chain data location (--home flag).
+# By default equals node_home value from chain registry (e.g. /home/cosmos/.osmosisd)
+# e.g. data_dir: /mnt/data/.osmosisd
+
+# <chain_minimum_gas_prices> defines minimum transaction fee
+# it is recommended to set this parameter
+# to prevent getting spammed by transactions with no gas
+# e.g. chain_minimum_gas_prices: 0.25token1;0.0001token2
+
+# <chain_addrbook_url> is an optinal URL to download chain addrbook.json
+# e.g. chain_addrbook_url: https://network.terra.dev/addrbook.json
+
+# <chain_moniker> is the custom username of your node
+chain_moniker: NextNet.Works-Noria-Val-1
+
+# <chain_pruning> defines the pruning strategy.
+# Avaiable options are default, nothing, everything, custom.
+chain_pruning: default
+
+# <chain_pruning_keep_recent> defines number of last states to keep (e.g. 100).
+# Only applied when chain_pruning is custom.
+chain_pruning_keep_recent: "0"
+
+# <chain_pruning_interval> defines the prunning interval (e.g. 10)
+# Only applied when chain_pruning is custom.
+chain_pruning_interval: "0"
+
+# <chain_api_enable> defines if the API server should be enabled.
+chain_api_enable: true
+
+# quicksync_available defines whether quicksync mode is avaialble for chain.
+# Set in chain vars.
+quicksync_available: false
+
+# <quicksync_mode> defines the chain data file to download.
+# Avaialable values are pruned, default, archive and none (sync from beginning).
+quicksync_mode: pruned
+
+# <quicksync_mirror> selects the regional mirror.
+# Avaiable options are Netherlands, Singapore, SanFrancisco
+quicksync_mirror: Netherlands
+
+# <quicksync_connection_num> is the maximum number of connections to the server for each download.
+quicksync_connection_num: 5
+
+# <quicksync_force> forces the chain data download step.
+# Warning, the content of the data dir will be wiped.
+# By default chain data will be downloaded only after chain init.
+quicksync_force: false
+
+# <quicksync_skip_download> skips steps to download quicksync chain data archive,
+# assuming that the file has been already downloaded.
+quicksync_skip_download: false
+
+# <quicksync_skip_download> skips steps to perform the checksum over downloaded archive,
+# quicksync.io has issues recently with checksum integrity.
+quicksync_skip_checksum: false
+
+# <quicksync_target_url> allows to override target url to download chain data archive
+# e.g. quicksync_target_url: <custom state url>
+
+# <quicksync_tmp_dir> is the temporary dir to keep downloaded file.
+# The aria2c package is utilized to speed up download process,
+# but it requires double size to first download and then unpack data archive.
+# In cloud environment the download dir often points to temporary mounted drive.
+quicksync_tmp_dir: /tmp/quicksync
+
+# <golang_bin_dir> is the location of the golang bin folder which will be added
+# to the $PATH.
+golang_bin_dir: /usr/local/go/bin

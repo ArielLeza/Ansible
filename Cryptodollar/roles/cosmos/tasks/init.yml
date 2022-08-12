@@ -1,0 +1,37 @@
+---
+# https://stackoverflow.com/a/56379678/166473
+- name: "Install acl package"
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 86400
+    pkg: acl
+
+# Only init once when there is no genesis.json file
+- name: "Init {{ chain_name }} chain"
+  ansible.builtin.command: "{{ chain_bin }} init {{ chain_moniker }} --home={{ data_dir }} --chain-id={{ chain_id }}"
+  args:
+    creates: "{{ data_dir }}/config/genesis.json"
+  become: true
+  become_user: "{{ username }}"
+  register: init_result
+  notify: restart_service
+
+- name: "Download the genesis file (instead default)" # noqa no-handler
+  ansible.builtin.get_url:
+    url: "{{ chain_genesis_url }}"
+    dest: "{{ data_dir }}/config/genesis.json"
+    owner: "{{ username }}"
+    force: true
+    mode: "640"
+  when: init_result.changed
+
+- name: "Download addrbook file" # noqa no-handler
+  ansible.builtin.get_url:
+    url: "{{ chain_addrbook_url }}"
+    owner: "{{ username }}"
+    dest: "{{ data_dir }}/config/addrbook.json"
+    mode: "640"
+  when:
+    - init_result.changed
+    - chain_addrbook_url is defined
+  notify: restart_service
